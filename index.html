@@ -217,7 +217,7 @@
     <article class="cube-excerpt-entry cube-markdown">
         
         
-           <p>redis 底层实现原理简介<br>region{</p>
+           <p>redis 底层实现原理简介<br>&lt;–more–&gt;<br>region{</p>
 <h3 id="多数据库"><a href="#多数据库" class="headerlink" title="多数据库"></a>多数据库</h3><pre><code>redis是字典结构的存储服务器，一个redis实例提供多个用来存储数据的字典，客户端可以指定将数据存储在哪个字典中。
 
 redis不支持自定数据库名字，每个数据库都以编号命名。另外，一个redis实例不支持为每个数据库设置不同的访问密码，所以一个客户端要么可以访问全部数据库，要么链一个数据库页没有权限访问。最重要的多个数据库之间不是完全隔离的，比如flushall可以清空一个redis实例中所有数据库中的数据。</code></pre><h3 id="简单动态字符串SDS"><a href="#简单动态字符串SDS" class="headerlink" title="简单动态字符串SDS"></a>简单动态字符串SDS</h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> &#123;</span></span><br><span class="line">    <span class="comment">// 记录buf数组中已经使用字节的数量</span></span><br><span class="line">    <span class="comment">//等于SDS所保存字符串长度</span></span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="comment">// 记录buf数组中未使用字节数量</span></span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">free</span>;</span><br><span class="line">    <span class="comment">//字节数组，用于保存字符串</span></span><br><span class="line">    <span class="keyword">char</span> buf[]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
