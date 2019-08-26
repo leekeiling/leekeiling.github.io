@@ -10,7 +10,7 @@
     
     
     
-    <title>Keiling</title>
+    <title>redis设计简介 | Keiling</title>
     <!-- inject:style -->
     <link href="/css/style.css" rel="stylesheet" type="text/css">
     <!-- endinject -->
@@ -160,64 +160,26 @@
     
     <div class="cube-content">
         <div class="cube-left">
-            
-<div class="cube-excerpt" id="cube-excerpt-毕业">
-    <header class="cube-excerpt-header">
-        <h1><a href="/2019/06/30/毕业/">毕业</a></h1>
-        <div class="cube-excerpt-header-msg">
-            <div class="cube-excerpt-date">
-                <i class="cube-icon cube-icon-date" aria-hidden="true"></i>
-                2019-06-30
-            </div>
-            <div class="cube-excerpt-tags">
-                <i class="cube-icon cube-icon-tag" aria-hidden="true"></i>
-                
-            </div>
+            <div class="cube-article">
+    <h1 class="title">redis设计简介</h1>
+    
+    <div class="cube-article-header">
+        <div class="cube-article-date">
+            <i class="cube-icon cube-icon-date" aria-hidden="true"></i>
+            <!-- moment.js对象 -->
+            2018-07-23
         </div>
-    </header>
-    <article class="cube-excerpt-entry cube-markdown">
-        
-        
-           <p>毕业了，不能说百感交集，毕竟整个大四学年都在实习，踏入社会神马的早就开始了，<br>所以说，自己是没有什么感受好写的，也不想写自己大学四年都干了啥，搞得像自传一样，<br>反正不算值得吹嘘（也没有），杂七杂八的就不写了。  </p>
-<p>之前自己的学习笔记都记在自己github上，目前来看，可以沉淀的很少，别人看也没有收获。<br>总之就是只适合自己看看。搭建这个博客想写一些真正沉淀的技术，至少别人看了能说这个牛逼。  </p>
-<p>毕业了，给自己立些flag吧～  </p>
-<ul>
-<li>博客月更两篇</li>
-<li>学习人工智能换脸技术</li>
-<li>造个轮子：内存池化技术</li>
-<li>内存优化深入学习</li>
-<li>c++并发编程实践学习</li>
-<li>native 崩溃分析案例</li>
-</ul>
-<p>小目标，过年之前努力实现吧～  </p>
-
-        
-    </article>
-    <footer class="cube-excerpt-footer">
-        <a class="cube-excerpt-more" href="/2019/06/30/毕业/">Read More</a>
-    </footer>
+        <div class="cube-article-tags">
+    <i class="cube-icon cube-icon-tag" aria-hidden="true"></i>
+    
+    <a href="/tags/数据库-redis/">#数据库 redis</a>
+    
 </div>
-
-<div class="cube-excerpt" id="cube-excerpt-redis设计简介">
-    <header class="cube-excerpt-header">
-        <h1><a href="/2018/07/23/redis设计简介/">redis设计简介</a></h1>
-        <div class="cube-excerpt-header-msg">
-            <div class="cube-excerpt-date">
-                <i class="cube-icon cube-icon-date" aria-hidden="true"></i>
-                2018-07-23
-            </div>
-            <div class="cube-excerpt-tags">
-                <i class="cube-icon cube-icon-tag" aria-hidden="true"></i>
-                
-                <a href="/tags/数据库-redis/" class="cube-excerpt-tag-link">#数据库 redis</a>
-                
-            </div>
-        </div>
-    </header>
-    <article class="cube-excerpt-entry cube-markdown">
+    </div>
+    
+    <div class="cube-article-content cube-markdown">
         
-        
-           <h3 id="多数据库"><a href="#多数据库" class="headerlink" title="多数据库"></a>多数据库</h3><pre><code>redis是字典结构的存储服务器，一个redis实例提供多个用来存储数据的字典，客户端可以指定将数据存储在哪个字典中。
+        <h3 id="多数据库"><a href="#多数据库" class="headerlink" title="多数据库"></a>多数据库</h3><pre><code>redis是字典结构的存储服务器，一个redis实例提供多个用来存储数据的字典，客户端可以指定将数据存储在哪个字典中。
 
 redis不支持自定数据库名字，每个数据库都以编号命名。另外，一个redis实例不支持为每个数据库设置不同的访问密码，所以一个客户端要么可以访问全部数据库，要么链一个数据库页没有权限访问。最重要的多个数据库之间不是完全隔离的，比如flushall可以清空一个redis实例中所有数据库中的数据。</code></pre><h3 id="简单动态字符串SDS"><a href="#简单动态字符串SDS" class="headerlink" title="简单动态字符串SDS"></a>简单动态字符串SDS</h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span> &#123;</span></span><br><span class="line">    <span class="comment">// 记录buf数组中已经使用字节的数量</span></span><br><span class="line">    <span class="comment">//等于SDS所保存字符串长度</span></span><br><span class="line">    <span class="keyword">int</span> len;</span><br><span class="line">    <span class="comment">// 记录buf数组中未使用字节数量</span></span><br><span class="line">    <span class="keyword">int</span> <span class="built_in">free</span>;</span><br><span class="line">    <span class="comment">//字节数组，用于保存字符串</span></span><br><span class="line">    <span class="keyword">char</span> buf[]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -514,39 +476,28 @@ ASK错误处理：
 <li>事务执行</li>
 </ol>
 
+    </div>
+</div>
+
+<div class="cube-article-nav">
+    <ul>
         
-    </article>
-    <footer class="cube-excerpt-footer">
-        <a class="cube-excerpt-more" href="/2018/07/23/redis设计简介/">Read More</a>
-    </footer>
+        <li class="prev">
+            <a href="/2019/06/30/毕业/">
+                <i class="cube-icon cube-prev" aria-hidden="true"></i>
+                毕业
+            </a>
+        </li>
+        
+        
+    </ul>
 </div>
 
 
+<!-- TODO 根据theme.comment的内容进行入口选择 -->
 
-<ul class="cube-pagination cube-pagination-6">
-    
-    <li class="cube-pagination-prev disabled">
-        <span>« Prev</span>
-    </li>
-    
-    
-        
-            
-            <li class="cube-pagination-index disabled">
-                <span>1</span>
-            </li>
-            
-        
-    
 
-    
-    <li class="cube-pagination-next disabled">
-        <span>Next »</span>
-    </li>
-    
-</ul>
 
-<!--其他组件后续添加-->
         </div>
         <div class="cube-right">
             
