@@ -178,58 +178,9 @@
     <article class="cube-excerpt-entry cube-markdown">
         
         
-           <h2 id="纯虚函数调用crash原因"><a href="#纯虚函数调用crash原因" class="headerlink" title="纯虚函数调用crash原因"></a>纯虚函数调用crash原因</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="built_in">std</span>;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">D</span>;</span></span><br><span class="line"></span><br><span class="line">B* b = <span class="literal">NULL</span>;</span><br><span class="line">C* c = <span class="literal">NULL</span>;</span><br><span class="line">D* d = <span class="literal">NULL</span>;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span>&#123;</span></span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        A() &#123;&#125;</span><br><span class="line">        <span class="function"><span class="keyword">virtual</span> <span class="keyword">void</span> <span class="title">func</span><span class="params">()</span> </span>= <span class="number">0</span>;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">D</span> :</span> <span class="keyword">public</span> A&#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        D() &#123; d = <span class="keyword">this</span>; &#125;</span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="keyword">int</span> d1;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span>&#123;</span></span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        B() &#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">            b = <span class="keyword">this</span>;</span><br><span class="line">            d-&gt;func(); <span class="comment">//crash address</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; <span class="string">"this is b "</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="keyword">int</span> b1;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span> :</span> <span class="keyword">public</span> D, <span class="keyword">public</span> B&#123;</span><br><span class="line">    <span class="keyword">public</span>:</span><br><span class="line">        C() &#123;</span><br><span class="line">            c = <span class="keyword">this</span>;</span><br><span class="line">            <span class="keyword">this</span>-&gt;func();</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="built_in">cout</span> &lt;&lt; <span class="string">"this is c "</span> &lt;&lt; <span class="keyword">this</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="keyword">int</span> c1;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;    C c;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>上面程序C继承D类和B类， D类继承抽象A类  </p>
-<p>在main函数，构造C类。在C类构造过程中如下：  </p>
-<p>Class A –&gt; Class D –&gt; Class B –&gt; Class C  </p>
-<h3 id="抽象类A构造"><a href="#抽象类A构造" class="headerlink" title="抽象类A构造"></a>抽象类A构造</h3><p>打印抽象类A的虚函数表指针：_vptr.A=0x400c70  </p>
-<center>
-    <img src="https://raw.githubusercontent.com/leekeiling/PicturePool/master/pics/a2903e98-b32b-4edc-8d59-371843c93707.png">
-</center>
-
-
-<h3 id="D类构造"><a href="#D类构造" class="headerlink" title="D类构造"></a>D类构造</h3><p>D类构造过程中把D对象的this指针赋值给变量d  </p>
-<h3 id="B类构造"><a href="#B类构造" class="headerlink" title="B类构造"></a>B类构造</h3><center>
-    <img src="https://raw.githubusercontent.com/leekeiling/PicturePool/master/pics/2bf3b15a-58f0-4cd4-ae92-521409a8327d.png">
-</center>
-- 在B类构造函数用
-- B对象构造函数中调用d->func(), 汇编代码已经打出来了
-
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mov <span class="number">0x20170a</span>(%rip), %rax  ;获取全局变量d地址 保存到寄存器 rax中</span><br><span class="line">mov (%rax),%rax</span><br><span class="line">mov (%rax),%rax           ;取虚函数表第一个函数地址, 保存到寄存器 rax中</span><br><span class="line">mov <span class="number">0x2016fd</span>(%rip),%rdx   </span><br><span class="line">callq *%rax               ；调用rax寄存器中保存到函数地址</span><br></pre></td></tr></table></figure>
-
-<center>
-    <img src="https://raw.githubusercontent.com/leekeiling/PicturePool/master/pics/7892275f-aa3f-4748-9c04-8f957d2cf933.png">
-</center>
-看下rax寄存器内容，rax=0x7ffffffd880  
-
-
-
-<center>
-    <img src="https://raw.githubusercontent.com/leekeiling/PicturePool/master/pics/7892275f-aa3f-4748-9c04-8f957d2cf933.png">
-</center>
-- 看下d变量，d=0x7ffffffd880, 跟寄存器rax保存到值一样  
-- 看下d变量地址，d=0x6022d8，跟上面到汇编代码的注释一样  
-
-
-<center>
-    <img src="https://raw.githubusercontent.com/leekeiling/PicturePool/master/pics/bd9d75ea-7721-4f9c-94b8-c948892acc91.png">
-</center>
-- 打印下d对象虚函数表指针指向的虚函数表地址， vtable_address=0x400d28, 注意是D类的虚函数表地址, 也是A类的虚函数表地址
-
-
-<center>
-    <img src="https://raw.githubusercontent.com/leekeiling/PicturePool/master/pics/5cf93891-765d-451a-8909-9f4c3f2f72f8.png">
-</center>
-- 打印下vtable_adress=0x400d28对应下的虚函数地址， func_address=0x400950，显然纯虚函数地址并没有等于0，它指向的地址是随机的 
-
-<center>
-    <img src="https://raw.githubusercontent.com/leekeiling/PicturePool/master/pics/3ecd24d5-e7f7-4702-a462-0c1152a57763.png">
-</center>
-- 继续单步执行汇编，顺利调用func_address=0x400950的函数，函数来源于抽象类A的虚函数表
-- 往下的堆栈就看不懂了
-
-
+           <h2 id="纯虚函数调用crash原因"><a href="#纯虚函数调用crash原因" class="headerlink" title="纯虚函数调用crash原因"></a>纯虚函数调用crash原因</h2><hr>
+<p>title: 纯虚函数调用crash原因·<br>date: 2018-11-02 07:49:02</p>
+<h2 id="tags-c"><a href="#tags-c" class="headerlink" title="tags: c++"></a>tags: c++</h2>
         
     </article>
     <footer class="cube-excerpt-footer">
@@ -490,7 +441,7 @@
     <div class="cube-boxs">
         
         
-        <div class="cube-box ">
+        <div class="cube-box-bg ">
             <a href="/tags/数据库-redis/">#数据库 redis</a>
         </div>
         
