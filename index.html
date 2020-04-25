@@ -161,9 +161,9 @@
     <div class="cube-content">
         <div class="cube-left">
             
-<div class="cube-excerpt" id="cube-excerpt-">
+<div class="cube-excerpt" id="cube-excerpt-Chromium MessagePump">
     <header class="cube-excerpt-header">
-        <h1><a href="/2020/04/25/Chromium MessagePump/"></a></h1>
+        <h1><a href="/2020/04/25/Chromium MessagePump/">Chromium MessagePump</a></h1>
         <div class="cube-excerpt-header-msg">
             <div class="cube-excerpt-date">
                 <i class="cube-icon cube-icon-date" aria-hidden="true"></i>
@@ -172,92 +172,15 @@
             <div class="cube-excerpt-tags">
                 <i class="cube-icon cube-icon-tag" aria-hidden="true"></i>
                 
+                <a href="/tags/chromium/" class="cube-excerpt-tag-link">#chromium</a>
+                
             </div>
         </div>
     </header>
     <article class="cube-excerpt-entry cube-markdown">
         
         
-           <h4 id="Chromium-MessagePump"><a href="#Chromium-MessagePump" class="headerlink" title="Chromium MessagePump"></a>Chromium MessagePump</h4><p>本文收益</p>
-<ul>
-<li>旧版和新版Chromium MessagePump任务调度策略的主要逻辑</li>
-<li>主要介绍OnNonDelayedLooperCallback和OnDelayedLooperCallback的逻辑</li>
-</ul>
-<p>MessagePump/MessageLoop(简单)<br>MessagePump的delegate是MessageLoop<br>MessageLoop维护四个任务队列:<br><code>Incomming Queue</code>: PostTask任务首先进入InComming Queue<br><code>Work Queue</code>: 任务调度从Work Queue里面获取任务并执行. 当Work Queue队列为空时, 通过交换InComming Queue和Work Queue指针方式完成Incomming Queue任务装载到Work Queue过程.<br><code>Delayed Queue</code>:保存需要延时的任务. 每个从Work Queue获取的任务均需要判断是否需要延时, 若需要延时则加入延时队列. Delayed Queue是优先级队列, 先触发的延时任务排在队首<br><code>Defer Queue</code>: 这个队列通常是存放哪些因为MessageLoop嵌套而不能执行的任务，这些任务通常会在空闲时从defer队列中继续执行被defer的任务  </p>
-<p><code>MessagePump</code>负责任务调度, 它维护两个fd: NonDelayFd和TimeFd, 两个fd数据可读时可以唤醒epoll_wait. 当有非延迟任务可调度时, 通过Schedule Work往NonDelayFd写数据,  触发NonDelayedLooperCallback; ScheduleDelayWork往系统注册延时任务回调时间, 当到了延时任务触发时间时, TimeFd数据可读,, 触发DelayedLooperCallback.  </p>
-<h4 id="OnNonDelayedLooperCallback"><a href="#OnNonDelayedLooperCallback" class="headerlink" title="OnNonDelayedLooperCallback"></a>OnNonDelayedLooperCallback</h4><p> 触发OnNonDelayedLooperCallback时, MessagePump任务调度策略如下:<br> ![image][<a href="https://github.com/leekeiling/PicturePool/blob/master/pics/messagepump1.png?raw=true]" target="_blank" rel="noopener">https://github.com/leekeiling/PicturePool/blob/master/pics/messagepump1.png?raw=true]</a><br> 在OnNonDelayedLooperCallback, DoWork和DoDelayedWork以轮转法方式交替执行.   </p>
-<p><strong>DoWork和DoDelayedWork做了啥?</strong><br>DoWork 从 WorkQueue里面拿出任务, 判断任务是否为延时任务, 若是则加入到Delayed Queue里面．加入Delayed Queue之后需要判断加入的任务是否比其他延时任务更早触发, 若是则更新注册在系统中的定时timefd<br>DoDelayedWork 从 Delayed Queue里面获取任务并判断在Delayed Queue里面的任务是否立即执行.<br>若DoDelayedWork和DoWork在一个轮转周期均无实际执行任务, 则MessagePump跳出轮转并进入判断此刻Native是否处于Idle状态流程.   </p>
-<p><strong>怎么判断是否处于Idle状态?</strong> </p>
-<p>判断Idle状态是很重要过程, 若此刻Native MessageLoop处于Idle状态, 主端PollOnce返回开始处理Java任务.<br>判断Idle状态依赖NonDelayFd的数值. 当退出Round Robin时会read NonDelayedFd数据. 若NonDelayedFd为1, 认为native处于Idle状态, 开始DoIdleWork; 若NonDelayedFd大于1, 认为native有其他任务调度, 重新ScheduleWork并触发OnNonDelayedLooperCallback, 触发OnNonDelayedLooperCallback之后, 从上述流程来看, 会查询Incoming Queue, Work Queue和DelayedWork Queue进行任务调度,    </p>
-<p>ScheduleWork作用是往NonDelayedFd写数据1以期触发OnNonDelayedLooperCallback. 因此, 在Round Robin的时候其他线程调用ScheduleWork, 那么退出Round Robin并清空NonDelayedFd时候会发现NonDelayedFd大于1, 进而说明其他线程向Message Loop抛了任务, 此时native并不处于Idle状态.<br>DoIdleWork做了啥?    </p>
-<p>DoIdleWork清空Defer Queue里面的pending任务, 然后ScheduleDelayedWork向系统注册最近delayed work的触发时机.   </p>
-<h4 id="OnDelayedLooperCallback"><a href="#OnDelayedLooperCallback" class="headerlink" title="OnDelayedLooperCallback"></a>OnDelayedLooperCallback</h4><p>触发OnDelayedLooperCallback时, MessagePump任务调度策略如下:<br><pic2><br>首先是DoDelayedWork从Delayed Queue里面执行DelayedWork. 流程中MoreDelayedWork判断是否有其他延时任务, 若有则更新timeFd.  </pic2></p>
-<p>最终都需要调用ScheduleWork, 为啥?  </p>
-<p>ScheduleWork向NonDelayedFd写数据并触发OnNonDelayedLooperCallback, 只有OnNonDelayedLooperCallback里面可以判断native层是否Idle. 因此调用ScheduleWork是为了检测native层是否处于Idle状态.  </p>
-<h4 id="essagePump-ThreadControllerWithMessagePump-复杂"><a href="#essagePump-ThreadControllerWithMessagePump-复杂" class="headerlink" title="essagePump/ThreadControllerWithMessagePump(复杂)"></a>essagePump/ThreadControllerWithMessagePump(复杂)</h4><p>MessagePump的delegate是ThreadControllerWithMessagePump  </p>
-<h4 id="OnNonDelayedLooperCallback-1"><a href="#OnNonDelayedLooperCallback-1" class="headerlink" title="OnNonDelayedLooperCallback"></a>OnNonDelayedLooperCallback</h4><p>OnNonDelayedLooperCallback流程与上面一致, 不过此时将DoDelayedWork和DoWork方法合并成DoSomeWork, 将更多工作交给delegate处理, 此时delegate为ThreadControllerWithMessagePump.   </p>
-<p>DoSomeWork第一步从TaskResource拿出Task来执行, TaskResource由SequenceManager管理.  </p>
-<p>SequenceManager对Task细粒度控制, 同时提供Selector从任务队列中取出Task。  </p>
-<p>Selector主要负责任务调度。<br><pic3></pic3></p>
-<p>结合代码过一遍上面流程～结合代码过一遍上面流程～  </p>
-<p>首先是回调开始：<br><pic4></pic4></p>
-<p>回调结束：<br><pic5></pic5></p>
-<p>OnNonLooperCallback开始，首先清空唤醒此次callback的non_delayed_fd描述符，读取的值保存到pre_work_value.   </p>
-<p>回调收尾阶段，若pre_work_value与kTryNativeTasksBeforeIdleBit不相等，说明其他对象调用ScheduleWork写入其他数据到non_delayed_fd， 意味着此次回调有任务调度； 若相等，说明此次回调仅仅是由kTryNativeTasksBeforeIdleBit数据起作用，此次回调没有任务调度，MessagePump处于Idle状态。  </p>
-<p>举个栗子：  </p>
-<ul>
-<li>调用 ScheduleWork， non_delayed_fd写入1</li>
-<li>non_delayed_fd有数据，OnNonLooperCallback回调开始，读non_delayed_fd，pre_work_value = 1</li>
-<li>OnNonLooperCallback回调收尾，pre_work_value != kTryNativeTasksBeforeIdleBit, 说明此次回调由ScheduleWork作用</li>
-<li>往non_delayed_fd写入kTryNativeTasksBeforeIdleBit， return</li>
-<li>non_delayed_fd有数据，OnNonLooperCallback回调开始，读non_delayed_fd，pre_work_value = kTryNativeTasksBeforeIdleBit</li>
-<li>假如某个对象有调用ScheduleWork， 那么pre_work_value = kTryNativeTasksBeforeIdleBit | 1， 此处跳过这个假设</li>
-<li>OnNonLooperCallback回调收尾，pre_work_value == kTryNativeTasksBeforeIdleBit, 说明此次回调仅仅由kTryNativeTasksBeforeIdleBit起作用，messagepump处于Idle状态</li>
-</ul>
-<p>接下来是处理native任务：<br><pic6></pic6></p>
-<p>在while循环里，delegate_是ThreadControllerWithMessagePump对象，DoSomeWork处理$(batch size)数量的delayed task或者immediate task。  </p>
-<p><strong>DoSomeWork</strong><br><pic7><br>DoSomeWork在for循环处理work_batch_size数量的任务, 它从task_source取出任务, 由task_annotator代理执行任务.<br>任务调度策略主要在task_source-&gt;TakeTask()方法, task_source是SequenceManager对象.  </pic7></p>
-<p><strong>TaskTask</strong><br><pic8></pic8></p>
-<p>主要逻辑如下:  </p>
-<ul>
-<li>ReloadEmptyWorkQueues将所有空WorkQueue与IncommingQueue交换指针,逻辑上将IncommingQueue的任务装载到WorkQueue</li>
-<li>MoveReadyDelayedTasksToWorkQueues</li>
-<li>在while循环内通过selector.SelectWorkQueueToService选择一个WorkQueue, 以下重点讲selector.SelectWorkQueueToService </li>
-<li>依次判断队首任务是否取消, 是否处于嵌套状态, 条件不满足将重新通过selector选择另一个WorkQueue</li>
-<li>返回队首任务</li>
-</ul>
-<p><strong>selector</strong><br>selector维护DelayedWorkQueueSet和ImmediateWorkQueueSet两种类型的多优先级任务队列集合, 多优先级任务队列集合架构如下(以DelayedWorkQueueSet为例):<br>DelayedWorkQueueSet  </p>
-<ul>
-<li>kControlPriority Heap : {q1, q2, q3, q4.. }</li>
-<li>kHighestPriority Heap : {q1, q2, q3, q4.. }</li>
-<li>kVeryHighPriority Heap: {q1, q2, q3, q4.. }</li>
-<li>kHighPriority Heap: {q1, q2, q3, q4.. }</li>
-<li>kNormalPriority Heap: {q1, q2, q3, q4.. }</li>
-<li>kLowPriority Heap: {q1, q2, q3, q4.. }</li>
-<li>kBestEffortPriority Heap: {q1, q2, q3, q4.. }</li>
-</ul>
-<p>可以看到, DelayedWorkQueueSet和ImmediateWorkQueueSet下有7种优先级的堆, 其中, kControlPriority优先级最高, 优先执行并可以饿死其他队列; kBestEffortPriority优先级最低, 只有其他类型队列都执行完之后才开始执行.  每个堆下又挂载多个WorkQueue(q1, q2, q3…), 这些WorkQueue按任务的oldest程度排序.<br>因此, selector任务调度首先从QueueSet中选择某种优先级的Heap, 然后在这个Heap中选择包含oldest任务的WorkQueue, 最后从WorkQueue取出队首任务.  </p>
-<p><strong>SelectWorkQueueToService</strong><br><pic9></pic9></p>
-<p>SelectWorkQueueToService首先从active_priorities中获取下一个优先级类型. active_priorites保存目前活跃的优先级种类, active_priorities按每个优先级的key值大小排序, 下一次优先级种类的选择依据最小key值.<br>第二步更新selection_count值, selection_count参与优先级key大小的更新.<br>第三步更新priority key值大小并重新调整在active_priorities的排序. 每次从从active_priorities中选择priority, 需要重新更新该priority的key值大小以及在active_priorities的排序.<br>key大小的更新实现在GetSortKeyForPriority中,<br><pic10></pic10></p>
-<p>动态更新priority key值大小的原因是防止其他低优先级队列被高优先级队列饿死(kControlPriority和kBestEffortPriority除外).  </p>
-<p>上文selector提到, 当我们确定选择priority种类时, 就可以从DelayedWorkQueueSet或者ImmediateWorkQueueSet中选择对应的优先级种类的WorkQueue堆, 然后从该WorkQueue中选择包含oldest任务的WorkQueue.  </p>
-<p>现在的问题是我们确定了priority, 现在是DelayedWorkQueueSet和ImmediateWorkQueueSet的选择问题. 第四步ChooseWithPriority有对应的策略实现, ChooseWithPriority函数实现如下:<br><pic11></pic11></p>
-<p>immediate_starvation_count标记选择DelayedWorkQueueSet的次数, 当immediate_starvation_count &gt; kMaxDelayedStarvationTasks, 说明已经开始饿死ImmediateWorkQueueSet, 将优先选择ImmediateWorkQueueSet.<br>假如还达不饿死ImmediateWorkQueueSet条件, 选择哪个WorkQueueSet由ChooseImmediateOrDelayedTaskWithPriority方法决策.  </p>
-<pic12>
-
-<p>在ChooseImmediateOrDelayedTaskWithPriority中, GetWithPriorityAndroidEnqueueOrder是从WorkQueueSet中选择WorkQueue以及WorkQueue插入到集合时的序号.    </p>
-<p>ChooseImmediateOrDelayedTaskWithPriority会从ImmediateWorkQueueSet和DelayedWorkQueueSet分别选择对应的WorkQueue, 选择插入序号最小的WorkQueue.   </p>
-<p>到这里, TakeTask到SelectWorkQueueToService的主要逻辑已经完了, 主要是SequenceManager的selector对象如何管理多优先级队列集合和任务调度策略。<br>从TaskSource中选取到WorkQueue之后，就是从WorkQueue队首获取任务closure，最后是RunTask。  </p>
-<h4 id="OnDelayedLooperCallback-1"><a href="#OnDelayedLooperCallback-1" class="headerlink" title="OnDelayedLooperCallback"></a>OnDelayedLooperCallback</h4><pic13>
-在分析OnNonDelayedLooperCallback基础上，OnDelayedLooperCallback逻辑并不复杂。  
-  - 首先清空delayed_fd数据
-  - delegate调用DoSomeWork；DoSomeWork的流程在前面已经分析过了
-  - 如果DoSomeWork返回的下一次任务是Immediate的，那么SheduleWork往non_delayed_fd写数据，希望触发OnNonDelayedLooperCallback
-  - 若下一次任务不是Immdediate，DoIdleWork处理defer队列的任务
-  - ScheduleDelayedWork向系统注册下一次延迟任务的回调时机
-
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>两个MessagePump的主要区别是Deleagte不同,由Delegate不同而有不同的任务调度策略. 第一个MessagePump的任务调度策略是简单的在DelayedQueue和NonDelayedQueue轮转, 第二个MessagePump的是多优先级多队列的公平调度策略.</p>
-</pic13></pic12>
+           <p>chromium 任务调度机制</p>
         
     </article>
     <footer class="cube-excerpt-footer">
@@ -545,7 +468,7 @@
                     <span>1</span>
                 </p>
                 <p class="title">
-                    <a href="/2020/04/25/Chromium MessagePump/" title=""></a>
+                    <a href="/2020/04/25/Chromium MessagePump/" title="Chromium MessagePump">Chromium MessagePump</a>
                 </p>
             </div>
             
@@ -623,23 +546,23 @@
         </div>
         
         
+        <div class="cube-box-bg ">
+            <a href="/tags/正向代理-squid/">#正向代理 squid</a>
+        </div>
+        
+        
         <div class="cube-box ">
             <a href="/tags/数据库-redis/">#数据库 redis</a>
         </div>
         
         
         <div class="cube-box-bg ">
-            <a href="/tags/正向代理-squid/">#正向代理 squid</a>
-        </div>
-        
-        
-        <div class="cube-box-bg ">
-            <a href="/tags/投资/">#投资</a>
+            <a href="/tags/c/">#c++</a>
         </div>
         
         
         <div class="cube-box ">
-            <a href="/tags/c/">#c++</a>
+            <a href="/tags/投资/">#投资</a>
         </div>
         
     </div>
